@@ -9,7 +9,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 
-
+import com.example.androidlistview.ImageLoader.Type;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -83,163 +83,160 @@ public class MainActivity extends Activity {
 		getImage();
 	}
 
+	public void getImage() {
 
-		
-		public void getImage() {
-
-			if (Environment.getExternalStorageDirectory().equals(Environment.MEDIA_MOUNTED)) {
-				{
-					Toast.makeText(MainActivity.this, "暂无外部存储", Toast.LENGTH_SHORT).show();
-					return;
-				}
-
-			}
-			new Thread(new Runnable() {
-
-				@Override
-				public void run() {
-					// 获取图片的URL
-					Uri imageUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
-					ContentResolver mContentResolver = MainActivity.this.getContentResolver();
-					// 只查询jpeg和png的图片
-					Cursor mCursor = mContentResolver.query(imageUri, null,
-							MediaStore.Images.Media.MIME_TYPE + "=? or " + MediaStore.Images.Media.MIME_TYPE + "=?",
-							new String[] { "image/jpeg", "image/png" }, MediaStore.Images.Media.DATE_MODIFIED);
-					System.out.println(mCursor.getCount() + "-------");
-					while (mCursor.moveToNext()) {
-						// 获取图片的路径
-						String path = mCursor.getString(mCursor
-								.getColumnIndex(MediaStore.Images.Media.DATA));
-
-						Log.e("TAG", path);
-						// 拿到第一张图片的路径
-						if (firstImage == null)
-							firstImage = path;
-						// 获取该图片的父路径名
-						File parentFile = new File(path).getParentFile();
-						if (parentFile == null)
-							continue;
-						String dirPath = parentFile.getAbsolutePath();
-						ImageFloder imageFloder = null;
-						// 利用一个HashSet防止多次扫描同一个文件夹（不加这个判断，图片多起来还是相当恐怖的~~）
-						if (mDirPaths.contains(dirPath))
-						{
-							continue;
-						} else
-						{
-							mDirPaths.add(dirPath);
-							// 初始化imageFloder
-							imageFloder = new ImageFloder();
-							imageFloder.setDir(dirPath);
-							imageFloder.setFirstImagePath(path);
-						}
-
-						int picSize = parentFile.list(new FilenameFilter()
-						{
-							@Override
-							public boolean accept(File dir, String filename)
-							{
-								if (filename.endsWith(".jpg")
-										|| filename.endsWith(".png")
-										|| filename.endsWith(".jpeg"))
-									return true;
-								return false;
-							}
-						}).length;
-						totalCount += picSize;
-
-						imageFloder.setCount(picSize);
-						mImageFloders.add(imageFloder);
-
-						if (picSize > mPicsSize)
-						{
-							mPicsSize = picSize;
-							mImgDir = parentFile;
-						}
-					}
-					  mCursor.close();  
-					  
-		                // 扫描完成，辅助的HashSet也就可以释放内存了  
-		                mDirPaths = null;  
-		  
-		                // 通知Handler扫描图片完成  
-		                mHandler.sendEmptyMessage(100);  
-				}
-			}).start();
-		}
-
-		private void dataView() {
-			// TODO Auto-generated method stub
-			if (mImgDir == null) {
-				Toast.makeText(MainActivity.this, "擦，一张图片没扫描到", Toast.LENGTH_SHORT).show();
+		if (Environment.getExternalStorageDirectory().equals(Environment.MEDIA_MOUNTED)) {
+			{
+				Toast.makeText(MainActivity.this, "暂无外部存储", Toast.LENGTH_SHORT).show();
 				return;
 			}
 
-			mImgs = Arrays.asList(mImgDir.list());
-
-			Log.e("TAG", mImgs.get(0).toString()+"dsdsds");
-			gridView.setAdapter(new GridAdapter(mImgs, mImgDir.getAbsolutePath()));
-		};
-
-		class GridAdapter extends BaseAdapter {
-			List<String> mDatas;
-			String dirPath;
-
-			public GridAdapter(List<String> mDatas, String dirPath) {
-				this.mDatas = mDatas;
-				this.dirPath = dirPath;
-
-			}
+		}
+		new Thread(new Runnable() {
 
 			@Override
-			public int getCount() {
-				// TODO Auto-generated method stub
-				return mDatas.size();
-			}
+			public void run() {
+				// 获取图片的URL
+				Uri imageUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+				ContentResolver mContentResolver = MainActivity.this.getContentResolver();
+				// 只查询jpeg和png的图片
+				Cursor mCursor = mContentResolver.query(imageUri, null,
+						MediaStore.Images.Media.MIME_TYPE + "=? or " + MediaStore.Images.Media.MIME_TYPE + "=?",
+						new String[] { "image/jpeg", "image/png" }, MediaStore.Images.Media.DATE_MODIFIED);
+				System.out.println(mCursor.getCount() + "-------");
+				while (mCursor.moveToNext()) {
+					// 获取图片的路径
+					String path = mCursor.getString(mCursor.getColumnIndex(MediaStore.Images.Media.DATA));
 
-			@Override
-			public Object getItem(int position) {
-				// TODO Auto-generated method stub
-				return mDatas.get(position);
-			}
+					Log.e("TAG", path);
+					// 拿到第一张图片的路径
+					if (firstImage == null)
+						firstImage = path;
+					// 获取该图片的父路径名
+					File parentFile = new File(path).getParentFile();
+					if (parentFile == null)
+						continue;
+					String dirPath = parentFile.getAbsolutePath();
+					
+					// 利用一个HashSet防止多次扫描同一个文件夹（不加这个判断，图片多起来还是相当恐怖的~~）
+					if (mDirPaths.contains(dirPath)) {
+						continue;
+					} else {
+						mDirPaths.add(dirPath);
+						// 初始化imageFloder
+						imageFloder = new ImageFloder();
+						imageFloder.setDir(dirPath);
+						imageFloder.setFirstImagePath(path);
+					}
 
-			@Override
-			public long getItemId(int position) {
-				// TODO Auto-generated method stub
-				return position;
-			}
+					int picSize = parentFile.list(new FilenameFilter() {
+						@Override
+						public boolean accept(File dir, String filename) {
+							if (filename.endsWith(".jpg") || filename.endsWith(".png") || filename.endsWith(".jpeg"))
+								return true;
+							return false;
+						}
+					}).length;
+					totalCount += picSize;
 
-			@Override
-			public View getView(int position, View convertView, ViewGroup parent) {
-				// TODO Auto-generated method stub
-				ViewHolder viewHolder;
-				if (convertView == null) {
-					viewHolder = new ViewHolder();
-					convertView = View.inflate(MainActivity.this, R.layout.item_, null);
-					viewHolder.img = (ImageView) convertView.findViewById(R.id.img);
-					convertView.setTag(viewHolder);
+					imageFloder.setCount(totalCount);
+					mImageFloders.add(imageFloder);
 
-				} else {
-					viewHolder = (ViewHolder) convertView.getTag();
+					if (picSize > mPicsSize) {
+						mPicsSize = picSize;
+						mImgDir = parentFile;
+					}
 				}
-				FileInputStream fis;
-				try {
-					fis = new FileInputStream(dirPath + "/" + getItem(position));
-					Bitmap bm = BitmapFactory.decodeStream(fis);
-					viewHolder.img.setImageBitmap(bm);
-				} catch (FileNotFoundException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+				mCursor.close();
 
-				return convertView;
+				// 扫描完成，辅助的HashSet也就可以释放内存了
+				mDirPaths = null;
+
+				// 通知Handler扫描图片完成
+				mHandler.sendEmptyMessage(100);
 			}
+		}).start();
+	}
+
+	private void dataView() {
+		// TODO Auto-generated method stub
+		if (mImgDir == null) {
+			Toast.makeText(MainActivity.this, "擦，一张图片没扫描到", Toast.LENGTH_SHORT).show();
+			return;
 		}
 
-		class ViewHolder {
+		mImgs = Arrays.asList(mImgDir.list());
+		count.setText(imageFloder.getCount()+"张");
+		Log.e("TAG", mImgs.get(0).toString() + "dsdsds");
+		gridView.setAdapter(new GridAdapter(mImgs, mImgDir.getAbsolutePath()));
+	
+	
+	
+	};
+
+	class GridAdapter extends BaseAdapter {
+		List<String> mDatas;
+		String dirPath;
+
+		public GridAdapter(List<String> mDatas, String dirPath) {
+			this.mDatas = mDatas;
+			this.dirPath = dirPath;
+
+		}
+
+		@Override
+		public int getCount() {
+			// TODO Auto-generated method stub
+			return mDatas.size();
+		}
+
+		@Override
+		public Object getItem(int position) {
+			// TODO Auto-generated method stub
+			return mDatas.get(position);
+		}
+
+		@Override
+		public long getItemId(int position) {
+			// TODO Auto-generated method stub
+			return position;
+		}
+
+		@Override
+		public View getView(int position, View convertView, ViewGroup parent) {
+			// TODO Auto-generated method stub
+			ViewHolder viewHolder;
+			if (convertView == null) {
+				viewHolder = new ViewHolder();
+				convertView = View.inflate(MainActivity.this, R.layout.item_, null);
+				viewHolder.img = (ImageView) convertView.findViewById(R.id.id_item_image);
+				convertView.setTag(viewHolder);
+
+			} else {
+				viewHolder = (ViewHolder) convertView.getTag();
+			}
+			if(position==0){
+				viewHolder.img.setImageDrawable(getResources().getDrawable(R.drawable.ic_launcher));
+			}else{
+			
+				ImageLoader.getInstance(3, Type.LIFO).loadImage(dirPath + "/" + getItem(position), viewHolder.img);
+			
+			}
+			/*
+			 * FileInputStream fis; try { fis = new FileInputStream(dirPath +
+			 * "/" + getItem(position)); Bitmap bm =
+			 * BitmapFactory.decodeStream(fis);
+			 * viewHolder.img.setImageBitmap(bm); } catch (FileNotFoundException
+			 * e) { // TODO Auto-generated catch block e.printStackTrace(); }
+			 */
+			return convertView;
+		}
+	}
+
+	class ViewHolder {
 
 		private ImageView img;
 
 	}
-	
+
 }
